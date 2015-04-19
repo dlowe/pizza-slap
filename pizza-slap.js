@@ -12,17 +12,27 @@
     var bg_layer1 = new Image();
     var bg_layer2 = new Image();
     var bg_layer3 = new Image();
-    var player_sprite = new Image();
-    var arm_sprite = new Image();
+    var player_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
+    var arm_sprites = [ new Image(), new Image(), new Image(), new Image() ];
     var brick_sprite = new Image();
-    var slap_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image()];
+    var slap_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
 
     bg_layer1.src = "bg-layer1.png";
     bg_layer2.src = "bg-layer2.png";
     bg_layer3.src = "bg-layer3.png";
-    player_sprite.src = "player.png";
-    arm_sprite.src = "arm.png";
     brick_sprite.src = "brick.png";
+    arm_sprites[0].src = "arm1.png";
+    arm_sprites[1].src = "arm2.png";
+    arm_sprites[2].src = "arm3.png";
+    arm_sprites[3].src = "arm4.png";
+    player_sprites[0].src = "player1.png";
+    player_sprites[1].src = "player2.png";
+    player_sprites[2].src = "player3.png";
+    player_sprites[3].src = "player4.png";
+    player_sprites[4].src = "player5.png";
+    player_sprites[5].src = "player6.png";
+    player_sprites[6].src = "player7.png";
+    player_sprites[7].src = "player8.png";
     slap_sprites[0].src = "slap1.png";
     slap_sprites[1].src = "slap2.png";
     slap_sprites[2].src = "slap3.png";
@@ -70,6 +80,20 @@
         return new_obj_at(obj, obj.x, obj.y + 1);
     };
 
+    var animated_sprite = function(obj, sprite_name) {
+        var sinfo = obj.sprites[sprite_name];
+        if (sinfo.predicate(obj)) {
+            if ((frameno % sinfo.sprite_speed) === 0) {
+                ++sinfo.sprite_index;
+                if (sinfo.sprite_index >= sinfo.ss.length) {
+                    sinfo.sprite_index = 0;
+                }
+            }
+            //console.log(sinfo.sprite_index);
+        }
+        return sinfo.ss[sinfo.sprite_index];
+    };
+
     var player = {
         'dead': true,
         'facing': 1,
@@ -101,9 +125,26 @@
         ],
         'slap_frame': -1,
         'sprites': {
-            'player': { 's': function (p) { return player_sprite },               'dx': 0, 'dy': 0   },
-            'arm':    { 's': function (p) { return arm_sprite },                  'dx': 0, 'dy': 0   },
-            'slap':   { 's': function (p) { return slap_sprites[p.slap_frame] },  'dx': 0, 'dy': -30 },
+            'player': { 's': function (p) { return animated_sprite(p, 'player') },
+                        'dx': 0,
+                        'dy': 0,
+                        'ss': player_sprites,
+                        'sprite_index': 0,
+                        'sprite_speed': 2,
+                        'predicate': function (p) { return p.xspeed !== 0; },
+            },
+            'arm':    { 's': function (p) { return animated_sprite(p, 'arm') },
+                        'dx': 0,
+                        'dy': 0,
+                        'ss': arm_sprites,
+                        'sprite_index': 0,
+                        'sprite_speed': 9,
+                        'predicate': function (p) { return true; },
+            },
+            'slap':   { 's': function (p) { return slap_sprites[p.slap_frame] },
+                        'dx': 0,
+                        'dy': -30
+            },
         },
     };
     var spawn_player = function(bx, by) {
@@ -185,7 +226,7 @@
                 player.press_slap = false;
             }
         } else {
-            console.log("slapping");
+            //console.log("slapping");
             ++player.slap_frame;
             if (player.slap_frame == player.slap.length) {
                 player.slap_frame = -1;
