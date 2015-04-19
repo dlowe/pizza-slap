@@ -141,6 +141,7 @@
     };
 
     var player = {
+        'health': 8,
         'dead': true,
         'kill': function (p) {
             p.dead = true;
@@ -165,6 +166,10 @@
         'hit': function (p) {
             p.yspeed = -5,
             p.invincible_until = frameno + 80;
+            --p.health;
+            if (p.health <= 0) {
+                p.kill(p);
+            }
         },
         'slap': [
             { 'dx': -20, 'dy': -90, 'h': 40, 'w': 90 },
@@ -306,11 +311,13 @@
             }
         }
         for (var mi = 0; mi < monsters.length; ++mi) {
-            if (collides(player, monsters[mi], true)) {
-                player.hit(player);
-            }
-            if (collides(slap_obj(player), monsters[mi], true)) {
-                monsters[mi].hit(monsters[mi]);
+            if (! monsters[mi].dead) {
+                if (collides(player, monsters[mi], true)) {
+                    player.hit(player);
+                }
+                if (collides(slap_obj(player), monsters[mi], true)) {
+                    monsters[mi].hit(monsters[mi]);
+                }
             }
         }
     };
@@ -421,9 +428,14 @@
             'ai': function (m) {
                 m.press_left = true;
             },
+            'health': 3,
             'hit': function (m) {
                 m.yspeed = -5;
                 m.invincible_until = frameno + 30;
+                --m.health;
+                if (m.health <= 0) {
+                    m.kill(m);
+                }
             },
             'kill': function (m) {
                 m.dead = true;
