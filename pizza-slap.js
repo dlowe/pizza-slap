@@ -288,7 +288,7 @@
             }
         }
 
-        //console.log("obj.x = " + obj.x + ", obj.y = " + obj.y);
+        // console.log("obj.x = " + obj.x + ", obj.y = " + obj.y);
         obj.x = new_x;
         obj.y = new_y;
         //console.log("obj.x = " + obj.x + ", obj.y = " + obj.y);
@@ -434,9 +434,32 @@
             'width': 100,
             'xspeed': 0,
             'yspeed': 0,
-            'top_speed': 0.2,
+            'top_speed': 3.0,
+            'jump': -11.5,
+            'unjump': -8,
+            'invincible_until': 0,
             'ai': function (m) {
-                m.press_left = true;
+                m.press_left  = false;
+                m.press_right = false;
+                m.press_jump  = false;
+
+                var in_the_air = (! collides_with_platforms(under_feet(m)));
+                // attempt to chase
+                if ((player.x + player.width) < (m.x - 20)) {
+                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x - m.width / 2, m.y + m.height)))) {
+                        if (m.xspeed === 0) {
+                            m.press_jump = true;
+                        }
+                        m.press_left = true;
+                    }
+                } else if (player.x > (m.x + m.width + 20)) {
+                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x + m.width / 2, m.y + m.height)))) {
+                        if (m.xspeed === 0) {
+                            m.press_jump = true;
+                        }
+                        m.press_right = true;
+                    }
+                }
             },
             'health': 3,
             'hit': function (m) {
@@ -578,7 +601,7 @@
         if (victory) {
             ctx.fillStyle = "#000000";
             ctx.font = "100px Impact";
-            ctx.fillText("VICTORY!!!!!!!!!!!!!!!!!!", c.width/2 - 270, c.height/2);
+            ctx.fillText("VICTORY!!!!!!!!!!!!!!", c.width/2 - 270, c.height/2);
         } else {
             ctx.fillStyle = "#000000";
             ctx.font = "100px Impact";
@@ -591,9 +614,9 @@
     var delta = 0;
     var last = window.performance.now();
     var frame = function() {
-        var now = window.performance.now();
-        delta = delta + Math.min(1, (now - last) / 1000);
         if (! game_over) {
+            var now = window.performance.now();
+            delta = delta + Math.min(1, (now - last) / 1000);
             while (delta > STEP) {
                 delta = delta - STEP;
                 update();
