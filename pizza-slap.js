@@ -518,7 +518,25 @@
             'slap_frame': -1,
             'slap': [],
             'ai': function (m) {
-                m.yspeed = 0;
+                m.press_right = false;
+                m.press_left = false;
+
+                if (player.x > m.x) {
+                    m.press_right = true;
+                } else if (player.x < m.x) {
+                    m.press_left = true;
+                }
+                if (Math.abs(player.x - m.x) < 300) {
+                    if (player.y > m.y) {
+                        m.yspeed = 5;
+                    } else {
+                        m.yspeed = 0;
+                    }
+                } else if (m.y > 100) {
+                    m.yspeed = -2;
+                } else {
+                    m.yspeed = 0;
+                }
             },
             'health': 2,
             'hit': monster_hit,
