@@ -566,7 +566,7 @@
         }
     };
 
-    $.getJSON("level-1.json", load_level);
-
-    requestAnimationFrame(frame);
+    $.getJSON("level-1.json", load_level).then(function () {
+        requestAnimationFrame(frame);
+    });
 })(document.getElementById("pizza-slap"));
