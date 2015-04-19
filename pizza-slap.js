@@ -15,12 +15,14 @@
     var player_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
     var arm_sprites = [ new Image(), new Image(), new Image(), new Image() ];
     var brick_sprite = new Image();
+    var spike_sprite = new Image();
     var slap_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
 
     bg_layer1.src = "bg-layer1.png";
     bg_layer2.src = "bg-layer2.png";
     bg_layer3.src = "bg-layer3.png";
     brick_sprite.src = "brick.png";
+    spike_sprite.src = "spike.png";
     arm_sprites[0].src = "arm1.png";
     arm_sprites[1].src = "arm2.png";
     arm_sprites[2].src = "arm3.png";
@@ -45,8 +47,10 @@
     slap_sprites[9].src = "slap10.png";
 
     var frameno = 0;
-
     var platforms = [];
+    var level_end = [];
+    var game_over = false;
+    var victory = false;
 
     var collides = function(o1, o2, respect_invincibility) {
         if (respect_invincibility) {
@@ -237,6 +241,11 @@
 
         var new_x = Math.floor(obj.x + obj.xspeed);
         var new_y = Math.floor(obj.y + obj.yspeed);
+
+        if (new_y >= c.height + obj.height) {
+            game_over = true;
+            return;
+        }
         if (obj.yspeed > 0) {
             while (collides_with_platforms(new_obj_at(obj, obj.x, new_y))) {
                 obj.yspeed = 0;
@@ -286,13 +295,15 @@
         if (spiked(player)) {
             player.hit(player);
         }
+        for (var ei = 0; ei < level_end.length; ++ei) {
+            if (collides(player, level_end[ei])) {
+                victory = true;
+                game_over = true;
+            }
+        }
         for (var mi = 0; mi < monsters.length; ++mi) {
             if (collides(player, monsters[mi], true)) {
                 player.hit(player);
-            }
-            var s = slap_obj(player);
-            if (s.x !== 0) {
-                console.log("%o", s);
             }
             if (collides(slap_obj(player), monsters[mi], true)) {
                 monsters[mi].hit(monsters[mi]);
@@ -353,11 +364,20 @@
 
     var new_platform = function(bx, by, spike) {
         return {
+            'sprites': { 'platform': { 's': function (p) { return p.spike ? spike_sprite : brick_sprite; }, 'dx': 0, 'dy': 0 } },
             'x': bx * BLOCK_WIDTH,
             'y': by * BLOCK_HEIGHT,
             'height': BLOCK_HEIGHT,
             'width': BLOCK_WIDTH,
             'spike': spike,
+        };
+    };
+    var new_level_end = function(bx, by) {
+        return {
+            'x': bx * BLOCK_WIDTH,
+            'y': by * BLOCK_HEIGHT,
+            'height': BLOCK_HEIGHT,
+            'width': BLOCK_WIDTH,
         };
     };
 
@@ -431,6 +451,9 @@
                     case '^':
                         platforms.push(new_platform(column, row, true));
                         break;
+                    case '|':
+                        level_end.push(new_level_end(column, row));
+                        break;
                     case ' ':
                         // nothing to see here
                         break;
@@ -498,11 +521,12 @@
         }
 
         for (var pi = 0; pi < platforms.length; ++pi) {
-            if (platforms[pi].spike) {
-                ctx.strokeRect(platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
-            } else {
-                ctx.drawImage(brick_sprite, platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
-            }
+            ds(platforms[pi], 'platform');
+            //if (platforms[pi].spike) {
+                //ctx.strokeRect(platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
+            //} else {
+                //ctx.drawImage(brick_sprite, platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
+            //}
         }
 
         for (var mi = 0; mi < monsters.length; ++mi) {
@@ -510,19 +534,36 @@
             ctx.strokeRect(monsters[mi].x - offset_x, monsters[mi].y, monsters[mi].width, monsters[mi].height);
         }
     };
+    var render_game_over = function() {
+        if (victory) {
+            ctx.fillStyle = "#000000";
+            ctx.font = "100px Impact";
+            ctx.fillText("VICTORY!!!!!!!!!!!!!!!!!!", c.width/2 - 270, c.height/2);
+        } else {
+            ctx.fillStyle = "#000000";
+            ctx.font = "100px Impact";
+            ctx.fillText("GAME", c.width/2 - 270, c.height/2 - 100);
+            ctx.fillText("OVER", c.width/2 - 270, c.height/2);
+        }
+        return;
+    };
     var STEP = 1/60;
     var delta = 0;
     var last = window.performance.now();
     var frame = function() {
         var now = window.performance.now();
         delta = delta + Math.min(1, (now - last) / 1000);
-        while (delta > STEP) {
-            delta = delta - STEP;
-            update();
+        if (! game_over) {
+            while (delta > STEP) {
+                delta = delta - STEP;
+                update();
+            }
+            render();
+            last = now;
+            requestAnimationFrame(frame);
+        } else {
+            render_game_over();
         }
-        render();
-        last = now;
-        requestAnimationFrame(frame);
     };
 
     $.getJSON("level-1.json", load_level);
