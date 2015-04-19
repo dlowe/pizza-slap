@@ -627,6 +627,19 @@
         'width': 0,
     };
 
+    var from_ahead = function (column) {
+        var x = column * BLOCK_WIDTH;
+        return function () {
+            return (player.x > (x - c.width / 2));
+        }
+    };
+    var from_behind = function (column) {
+        var x = column * BLOCK_WIDTH;
+        return function () {
+            return (player.x > (x + c.width / 2));
+        }
+    };
+
     var load_level = function(level_data) {
         //console.log("%o", level_data);
         var max_column = 0;
@@ -643,13 +656,22 @@
                         spawn_player(column, row);
                         break;
                     case 'A':
-                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_blob));
+                        spawnpoints.push(new_spawnpoint(column, row, from_ahead(column), new_blob));
+                        break;
+                    case 'a':
+                        spawnpoints.push(new_spawnpoint(column, row, from_behind(column), new_blob));
                         break;
                     case 'B':
-                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_flyer));
+                        spawnpoints.push(new_spawnpoint(column, row, from_ahead(column), new_flyer));
+                        break;
+                    case 'b':
+                        spawnpoints.push(new_spawnpoint(column, row, from_behind(column), new_flyer));
                         break;
                     case 'C':
-                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_whacker));
+                        spawnpoints.push(new_spawnpoint(column, row, from_ahead(column), new_whacker));
+                        break;
+                    case 'c':
+                        spawnpoints.push(new_spawnpoint(column, row, from_behind(column), new_whacker));
                         break;
                     case '^':
                         platforms.push(new_platform(column, row, true));
