@@ -5,6 +5,7 @@
 
     var TERMINAL_VELOCITY = 19;
     var GRAVITY = 0.9;
+    var FRICTION = 0.9;
 
     c.width = BLOCK_WIDTH * 53;
     c.height = BLOCK_HEIGHT * 46;
@@ -155,12 +156,17 @@
         'press_jump': false,
         'unpress_jump': false,
         'press_slap': false,
+        'acceleration': 5,
+        'deceleration': 5,
         'top_speed': 6,
         'jump': -10.5,
         'unjump': -5.5,
         'invincible_until': frameno + 120,
-        'hit': function (p) {
-            p.yspeed = -5,
+        'hit': function (p, facing) {
+            p.yspeed = -5;
+            if (facing) {
+                p.xspeed = 10 * facing;
+            };
             p.invincible_until = frameno + 80;
             --p.health;
             if (p.health <= 0) {
@@ -215,19 +221,27 @@
         if (obj.press_left) {
             obj.facing = -1;
             if (obj.xspeed > 0) {
-                obj.xspeed = 0;
+                obj.xspeed -= obj.deceleration;
+            } else if (obj.xspeed >= (-obj.top_speed + obj.acceleration)) {
+                obj.xspeed = obj.xspeed - obj.acceleration;
             } else {
                 obj.xspeed = -obj.top_speed;
             }
         } else if (obj.press_right) {
             obj.facing = 1;
             if (obj.xspeed < 0) {
-                obj.xspeed = 0;
+                obj.xspeed += obj.deceleration;
+            } else if (obj.xspeed <= (obj.top_speed - obj.acceleration)) {
+                obj.xspeed = obj.xspeed + obj.acceleration;
             } else {
                 obj.xspeed = obj.top_speed;
             }
         } else {
-            obj.xspeed = 0;
+            if (obj.xspeed > 0) {
+                obj.xspeed = Math.max(0, obj.xspeed - FRICTION);
+            } else {
+                obj.xspeed = Math.min(0, obj.xspeed + FRICTION);
+            }
         }
 
         if ((! in_the_air) && (obj.press_jump)) {
@@ -312,11 +326,11 @@
                 if (collides(player, monsters[mi], true)) {
                     player.hit(player);
                 } else if (collides(player, slap_obj(monsters[mi]), true)) {
-                    player.hit(player);
+                    player.hit(player, monsters[mi].facing);
                 }
 
                 if (collides(slap_obj(player), monsters[mi], true)) {
-                    monsters[mi].hit(monsters[mi]);
+                    monsters[mi].hit(monsters[mi], player.facing);
                 }
             }
         }
@@ -414,8 +428,9 @@
         }
     };
 
-    var monster_hit = function (m) {
+    var monster_hit = function (m, facing) {
         m.yspeed = -5;
+        m.xspeed = 15 * facing;
         m.invincible_until = frameno + 30;
         --m.health;
         if (m.health <= 0) {
@@ -436,6 +451,8 @@
             'width': 90,
             'xspeed': 0,
             'yspeed': 0,
+            'acceleration': 3,
+            'deceleration': 3,
             'top_speed': 3.0,
             'jump': -11.5,
             'unjump': -8,
@@ -492,6 +509,8 @@
             'width': 70,
             'xspeed': 0,
             'yspeed': 0,
+            'acceleration': 3,
+            'deceleration': 3,
             'top_speed': 3.0,
             'jump': -1,
             'unjump': -1,
@@ -526,6 +545,8 @@
             'width': 70,
             'xspeed': 0,
             'yspeed': 0,
+            'acceleration': 3,
+            'deceleration': 3,
             'top_speed': 4.0,
             'jump': -13,
             'unjump': -13,
@@ -754,11 +775,6 @@
                     ds(monsters[mi], 'arm');
                 } else {
                     ds(monsters[mi], 'slap');
-                }
-                if (monsters[mi].slap_frame !== -1) {
-                    var s = slap_obj(monsters[mi]);
-                    ctx.strokeStyle = "#FF0000";
-                    ctx.strokeRect(s.x - offset_x, s.y, s.width, s.height);
                 }
             }
         }
