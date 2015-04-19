@@ -142,6 +142,10 @@
 
     var player = {
         'dead': true,
+        'kill': function (p) {
+            p.dead = true;
+            game_over = true;
+        },
         'facing': 1,
         'height': 118,
         'width': 74,
@@ -243,7 +247,7 @@
         var new_y = Math.floor(obj.y + obj.yspeed);
 
         if (new_y >= c.height + obj.height) {
-            game_over = true;
+            obj.kill(obj);
             return;
         }
         if (obj.yspeed > 0) {
@@ -263,7 +267,7 @@
                 --new_x;
             }
         } else if (obj.xspeed < 0) {
-            while (collides_with_platforms(new_obj_at(obj, new_x, obj.y))) {
+            while ((new_x < 0) || (collides_with_platforms(new_obj_at(obj, new_x, obj.y)))) {
                 obj.xspeed = 0;
                 ++new_x;
             }
@@ -413,16 +417,26 @@
             'width': 100,
             'xspeed': 0,
             'yspeed': 0,
+            'top_speed': 0.2,
+            'ai': function (m) {
+                m.press_left = true;
+            },
             'hit': function (m) {
                 m.yspeed = -5;
                 m.invincible_until = frameno + 30;
+            },
+            'kill': function (m) {
+                m.dead = true;
             },
         };
     };
 
     var move_monsters = function() {
         for (var mi = 0; mi < monsters.length; ++mi) {
-            move(monsters[mi]);
+            if (! monsters[mi].dead) {
+                monsters[mi].ai(monsters[mi]);
+                move(monsters[mi]);
+            }
         }
     };
 
@@ -530,8 +544,10 @@
         }
 
         for (var mi = 0; mi < monsters.length; ++mi) {
-            ctx.strokeStyle = "#FF0000";
-            ctx.strokeRect(monsters[mi].x - offset_x, monsters[mi].y, monsters[mi].width, monsters[mi].height);
+            if (! monsters[mi].dead) {
+                ctx.strokeStyle = "#FF0000";
+                ctx.strokeRect(monsters[mi].x - offset_x, monsters[mi].y, monsters[mi].width, monsters[mi].height);
+            }
         }
     };
     var render_game_over = function() {
