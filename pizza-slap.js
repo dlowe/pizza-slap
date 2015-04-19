@@ -17,6 +17,7 @@
     var brick_sprite = new Image();
     var spike_sprite = new Image();
     var slap_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
+    var life_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
 
     bg_layer1.src = "bg-layer1.png";
     bg_layer2.src = "bg-layer2.png";
@@ -45,6 +46,15 @@
     slap_sprites[7].src = "slap8.png";
     slap_sprites[8].src = "slap9.png";
     slap_sprites[9].src = "slap10.png";
+    life_sprites[0].src = "life1.png";
+    life_sprites[1].src = "life2.png";
+    life_sprites[2].src = "life3.png";
+    life_sprites[3].src = "life4.png";
+    life_sprites[4].src = "life5.png";
+    life_sprites[5].src = "life6.png";
+    life_sprites[6].src = "life7.png";
+    life_sprites[7].src = "life8.png";
+    life_sprites[8].src = "life9.png";
 
     var frameno = 0;
     var platforms = [];
@@ -512,6 +522,8 @@
         for (var tilei = 0; tilei * 320 <= level.width; ++tilei) {
             ctx.drawImage(bg_layer3, tilei * 320 - (offset_x / 2), 0, 320, bg_layer3.height);
         }
+
+        ctx.drawImage(life_sprites[player.health], c.width - 100, 20, 80, 80);
 
         var ds = function(obj, sprite_name) {
             var sinfo  = obj.sprites[sprite_name];
