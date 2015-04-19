@@ -477,14 +477,14 @@
             offset_x = level.width - c.width;
         }
 
-        for (var tilei = 0; tilei * bg_layer1.width <= level.width; ++tilei) {
-            ctx.drawImage(bg_layer1, tilei * bg_layer1.width - (offset_x / 8), 0, bg_layer1.width, bg_layer1.height);
+        for (var tilei = 0; tilei * 30 <= level.width; ++tilei) {
+            ctx.drawImage(bg_layer1, tilei * 30 - (offset_x / 8), 0, 30, bg_layer1.height);
         }
-        for (var tilei = 0; tilei * bg_layer2.width <= level.width; ++tilei) {
-            ctx.drawImage(bg_layer2, tilei * bg_layer2.width - (offset_x / 4), 0, bg_layer2.width, bg_layer2.height);
+        for (var tilei = 0; tilei * 320 <= level.width; ++tilei) {
+            ctx.drawImage(bg_layer2, tilei * 320 - (offset_x / 4), 0, 320, bg_layer2.height);
         }
-        for (var tilei = 0; tilei * bg_layer3.width <= level.width; ++tilei) {
-            ctx.drawImage(bg_layer3, tilei * bg_layer3.width - (offset_x / 2), 0, bg_layer3.width, bg_layer3.height);
+        for (var tilei = 0; tilei * 320 <= level.width; ++tilei) {
+            ctx.drawImage(bg_layer3, tilei * 320 - (offset_x / 2), 0, 320, bg_layer3.height);
         }
 
         var ds = function(obj, sprite_name) {
