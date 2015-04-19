@@ -9,52 +9,38 @@
     c.width = BLOCK_WIDTH * 53;
     c.height = BLOCK_HEIGHT * 46;
 
+    var sprites = function (basename, n) {
+        var list = [];
+        for (var i = 0; i < n; ++i) {
+            var current = new Image();
+            current.src = basename + (i + 1) + ".png";
+            list.push(current);
+        }
+        return list;
+    };
+
     var bg_layer1 = new Image();
     var bg_layer2 = new Image();
     var bg_layer3 = new Image();
-    var player_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
-    var arm_sprites = [ new Image(), new Image(), new Image(), new Image() ];
+    var player_sprites = sprites("player", 8);
+    var arm_sprites = sprites("arm", 4);
     var brick_sprite = new Image();
     var spike_sprite = new Image();
-    var slap_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
-    var life_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image() ];
+    var slap_sprites = sprites("slap", 10);
+    var life_sprites = sprites("life", 9);
+    var flyer_sprites = sprites("flyer", 5);
+    var blob_sprites = sprites("blob", 6);
+    var whacker_sprite = new Image();
+    var whacker_arm_sprite = new Image();
+    var whacker_slap_sprites = sprites("whacker-slap", 32);
 
     bg_layer1.src = "bg-layer1.png";
     bg_layer2.src = "bg-layer2.png";
     bg_layer3.src = "bg-layer3.png";
     brick_sprite.src = "brick.png";
     spike_sprite.src = "spike.png";
-    arm_sprites[0].src = "arm1.png";
-    arm_sprites[1].src = "arm2.png";
-    arm_sprites[2].src = "arm3.png";
-    arm_sprites[3].src = "arm4.png";
-    player_sprites[0].src = "player1.png";
-    player_sprites[1].src = "player2.png";
-    player_sprites[2].src = "player3.png";
-    player_sprites[3].src = "player4.png";
-    player_sprites[4].src = "player5.png";
-    player_sprites[5].src = "player6.png";
-    player_sprites[6].src = "player7.png";
-    player_sprites[7].src = "player8.png";
-    slap_sprites[0].src = "slap1.png";
-    slap_sprites[1].src = "slap2.png";
-    slap_sprites[2].src = "slap3.png";
-    slap_sprites[3].src = "slap4.png";
-    slap_sprites[4].src = "slap5.png";
-    slap_sprites[5].src = "slap6.png";
-    slap_sprites[6].src = "slap7.png";
-    slap_sprites[7].src = "slap8.png";
-    slap_sprites[8].src = "slap9.png";
-    slap_sprites[9].src = "slap10.png";
-    life_sprites[0].src = "life1.png";
-    life_sprites[1].src = "life2.png";
-    life_sprites[2].src = "life3.png";
-    life_sprites[3].src = "life4.png";
-    life_sprites[4].src = "life5.png";
-    life_sprites[5].src = "life6.png";
-    life_sprites[6].src = "life7.png";
-    life_sprites[7].src = "life8.png";
-    life_sprites[8].src = "life9.png";
+    whacker_sprite.src = "whacker.png";
+    whacker_arm_sprite.src = "whacker-arm.png";
 
     var frameno = 0;
     var platforms = [];
@@ -428,13 +414,26 @@
         }
     };
 
-    var new_monster = function(x, y) {
+    var monster_hit = function (m) {
+        m.yspeed = -5;
+        m.invincible_until = frameno + 30;
+        --m.health;
+        if (m.health <= 0) {
+            m.kill(m);
+        }
+    };
+
+    var monster_kill = function (m) {
+        m.dead = true;
+    };
+
+    var new_blob = function(x, y) {
         return {
             'facing': 1,
             'x': x,
             'y': y,
-            'height': 150,
-            'width': 100,
+            'height': 70,
+            'width': 90,
             'xspeed': 0,
             'yspeed': 0,
             'top_speed': 3.0,
@@ -442,34 +441,129 @@
             'unjump': -8,
             'invincible_until': 0,
             'slap_frame': -1,
-            'slap': [
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 30 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 40 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 50 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 50 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 40 },
-                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 30 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
-                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+            'slap': [],
+            'ai': function (m) {
+                m.press_left  = false;
+                m.press_right = false;
+                m.press_jump  = false;
+                m.press_slap  = false;
+
+                var in_the_air = (! collides_with_platforms(under_feet(m)));
+                // attempt to chase
+                if ((player.x + player.width) < m.x) {
+                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x - m.width / 2, m.y + m.height)))) {
+                        if (m.xspeed === 0) {
+                            m.press_jump = true;
+                        }
+                        m.press_left = true;
+                    }
+                } else if (player.x > (m.x + m.width)) {
+                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x + m.width / 2, m.y + m.height)))) {
+                        if (m.xspeed === 0) {
+                            m.press_jump = true;
+                        }
+                        m.press_right = true;
+                    }
+                }
+            },
+            'health': 4,
+            'hit': monster_hit,
+            'kill': monster_kill,
+            'sprites': {
+                'monster': { 's': function(p) { return animated_sprite(p, 'monster') },
+                             'dx': 0,
+                             'dy': 0,
+                             'ss': blob_sprites,
+                             'sprite_index': 0,
+                             'sprite_speed': 6,
+                             'predicate': function (p) { return true; },
+                },
+            }
+        };
+    };
+
+    var new_flyer = function(x, y) {
+        return {
+            'facing': 1,
+            'flying': true,
+            'x': x,
+            'y': y,
+            'height': 50,
+            'width': 70,
+            'xspeed': 0,
+            'yspeed': 0,
+            'top_speed': 3.0,
+            'jump': -1,
+            'unjump': -1,
+            'invincible_until': 0,
+            'slap_frame': -1,
+            'slap': [],
+            'ai': function (m) {
+                m.yspeed = 0;
+            },
+            'health': 2,
+            'hit': monster_hit,
+            'kill': monster_kill,
+            'sprites': {
+                'monster': { 's': function(p) { return animated_sprite(p, 'monster') },
+                             'dx': 0,
+                             'dy': 0,
+                             'ss': flyer_sprites,
+                             'sprite_index': 0,
+                             'sprite_speed': 4,
+                             'predicate': function (p) { return true; },
+                },
+            }
+        };
+    };
+
+    var new_whacker = function(x, y) {
+        return {
+            'facing': 1,
+            'x': x,
+            'y': y,
+            'height': 100,
+            'width': 70,
+            'xspeed': 0,
+            'yspeed': 0,
+            'top_speed': 4.0,
+            'jump': -13,
+            'unjump': -13,
+            'invincible_until': 0,
+            'slap_frame': -1,
+            'slap': [ 
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 40 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 50 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 60 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 70 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 80 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 90 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 90 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 80 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 70 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 60 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 50 },
+                { 'dx': 0, 'dy': 0, 'h': 30, 'w': 40 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
+                { 'dx': 0, 'dy': 0, 'h': 0, 'w': 0 },
             ],
             'ai': function (m) {
                 m.press_left  = false;
@@ -502,18 +596,20 @@
                     m.press_slap = true;
                 }
             },
-            'health': 3,
-            'hit': function (m) {
-                m.yspeed = -5;
-                m.invincible_until = frameno + 30;
-                --m.health;
-                if (m.health <= 0) {
-                    m.kill(m);
-                }
-            },
-            'kill': function (m) {
-                m.dead = true;
-            },
+            'health': 4,
+            'hit': monster_hit,
+            'kill': monster_kill,
+            'sprites': {
+                'monster': { 's': function(p) { return whacker_sprite },
+                             'dx': 0,
+                             'dy': 0 },
+                'arm':     { 's': function(p) { return whacker_arm_sprite },
+                             'dx': -35,
+                             'dy': 6 },
+                'slap':    { 's': function(p) { return whacker_slap_sprites[p.slap_frame] },
+                             'dx': -35,
+                             'dy': 50 },
+            }
         };
     };
 
@@ -547,7 +643,13 @@
                         spawn_player(column, row);
                         break;
                     case 'A':
-                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_monster));
+                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_blob));
+                        break;
+                    case 'B':
+                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_flyer));
+                        break;
+                    case 'C':
+                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_whacker));
                         break;
                     case '^':
                         platforms.push(new_platform(column, row, true));
@@ -592,52 +694,46 @@
 
         var ds = function(obj, sprite_name) {
             var sinfo  = obj.sprites[sprite_name];
-            var sprite = sinfo.s(obj);
-            if ((obj.invincible_until > frameno) && (frameno % 9 == 0)) {
-                return;
+            if (sinfo) {
+                var sprite = sinfo.s(obj);
+                if ((obj.invincible_until > frameno) && (frameno % 9 == 0)) {
+                    return;
+                }
+                ctx.save();
+                if (obj.facing == 1) {
+                    ctx.scale(1, 1);
+                    ctx.drawImage(sprite, obj.x - offset_x - sinfo.dx, obj.y + sinfo.dy);
+                } else {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(sprite, -1 * (obj.x - offset_x + sinfo.dx) - obj.width, obj.y + sinfo.dy);
+                }
+                ctx.restore();
             }
-            ctx.save();
-            if (obj.facing == 1) {
-                ctx.scale(1, 1);
-                ctx.drawImage(sprite, obj.x - offset_x + sinfo.dx, obj.y + sinfo.dy);
-            } else {
-                ctx.scale(-1, 1);
-                ctx.drawImage(sprite, -1 * (obj.x - offset_x + sinfo.dx) - obj.width, obj.y + sinfo.dy);
-            }
-            ctx.restore();
         }
 
 
         if (! player.dead) {
-            //ctx.globalAlpha = 1.0;
-            //ctx.strokeStyle = "#00FF00";
-            //ctx.strokeRect(player.x - offset_x, player.y, player.width, player.height);
             ds(player, 'player');
             if (player.slap_frame == -1) {
                 ds(player, 'arm');
             } else {
                 ds(player, 'slap');
-                //ctx.strokeStyle = "#FF0000";
-                //var s = slap_obj(player);
-                //ctx.strokeRect(s.x - offset_x, s.y, s.width, s.height);
             }
         }
 
         for (var pi = 0; pi < platforms.length; ++pi) {
             ds(platforms[pi], 'platform');
-            //if (platforms[pi].spike) {
-                //ctx.strokeRect(platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
-            //} else {
-                //ctx.drawImage(brick_sprite, platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
-            //}
         }
 
         for (var mi = 0; mi < monsters.length; ++mi) {
             if (! monsters[mi].dead) {
-                ctx.strokeStyle = "#FF0000";
-                ctx.strokeRect(monsters[mi].x - offset_x, monsters[mi].y, monsters[mi].width, monsters[mi].height);
+                ds(monsters[mi], 'monster');
                 if (monsters[mi].slap_frame === -1) {
+                    ds(monsters[mi], 'arm');
                 } else {
+                    ds(monsters[mi], 'slap');
+                }
+                if (monsters[mi].slap_frame !== -1) {
                     var s = slap_obj(monsters[mi]);
                     ctx.strokeStyle = "#FF0000";
                     ctx.strokeRect(s.x - offset_x, s.y, s.width, s.height);
