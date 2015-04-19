@@ -13,11 +13,26 @@
     var bg_layer2 = new Image();
     var bg_layer3 = new Image();
     var player_sprite = new Image();
+    var arm_sprite = new Image();
+    var brick_sprite = new Image();
+    var slap_sprites = [ new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image(), new Image()];
 
     bg_layer1.src = "bg-layer1.png";
     bg_layer2.src = "bg-layer2.png";
     bg_layer3.src = "bg-layer3.png";
     player_sprite.src = "player.png";
+    arm_sprite.src = "arm.png";
+    brick_sprite.src = "brick.png";
+    slap_sprites[0].src = "slap1.png";
+    slap_sprites[1].src = "slap2.png";
+    slap_sprites[2].src = "slap3.png";
+    slap_sprites[3].src = "slap4.png";
+    slap_sprites[4].src = "slap5.png";
+    slap_sprites[5].src = "slap6.png";
+    slap_sprites[6].src = "slap7.png";
+    slap_sprites[7].src = "slap8.png";
+    slap_sprites[8].src = "slap9.png";
+    slap_sprites[9].src = "slap10.png";
 
     var frameno = 0;
 
@@ -85,6 +100,11 @@
             { 'dx': 20, 'dy': -60, 'h': 100, 'w': 60 },
         ],
         'slap_frame': -1,
+        'sprites': {
+            'player': { 's': function (p) { return player_sprite },               'dx': 0, 'dy': 0   },
+            'arm':    { 's': function (p) { return arm_sprite },                  'dx': 0, 'dy': 0   },
+            'slap':   { 's': function (p) { return slap_sprites[p.slap_frame] },  'dx': 0, 'dy': -30 },
+        },
     };
     var spawn_player = function(bx, by) {
         player.x = bx * BLOCK_WIDTH;
@@ -282,33 +302,40 @@
             ctx.drawImage(bg_layer3, tilei * bg_layer3.width - (offset_x / 2), 0, bg_layer3.width, bg_layer3.height);
         }
 
-
-        if (! player.dead) {
-            ctx.globalAlpha = 1.0;
-            ctx.strokeStyle = "#00FF00";
-            ctx.strokeRect(player.x - offset_x, player.y, player.width, player.height);
+        var ds = function(obj, sprite_name) {
+            var sinfo  = obj.sprites[sprite_name];
+            var sprite = sinfo.s(obj);
             ctx.save();
-            if (player.facing === 1) {
+            if (obj.facing == 1) {
                 ctx.scale(1, 1);
-                ctx.drawImage(player_sprite, player.x - offset_x, player.y, player.width, player.height);
+                ctx.drawImage(sprite, obj.x - offset_x + sinfo.dx, obj.y + sinfo.dy);
             } else {
                 ctx.scale(-1, 1);
-                ctx.drawImage(player_sprite, -1 * (player.x - offset_x) - player.width, player.y, player.width, player.height);
+                ctx.drawImage(sprite, -1 * (obj.x - offset_x + sinfo.dx) - obj.width, obj.y + sinfo.dy);
             }
             ctx.restore();
         }
 
-        for (var pi = 0; pi < platforms.length; ++pi) {
-            ctx.fillStyle = "#CCCCCC";
-            ctx.fillRect(platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
+
+        if (! player.dead) {
+            //ctx.globalAlpha = 1.0;
+            //ctx.strokeStyle = "#00FF00";
+            //ctx.strokeRect(player.x - offset_x, player.y, player.width, player.height);
+            ds(player, 'player');
+            if (player.slap_frame == -1) {
+                ds(player, 'arm');
+            } else {
+                ds(player, 'slap');
+                //ctx.strokeStyle = "#FF0000";
+                //ctx.strokeRect(player.x + (player.width / 2) + (player.slap[player.slap_frame].dx * player.facing) - offset_x,
+                               //player.y + (player.height / 2) + player.slap[player.slap_frame].dy,
+                               //player.slap[player.slap_frame].w * player.facing,
+                               //player.slap[player.slap_frame].h);
+            }
         }
 
-        if (player.slap_frame != -1) {
-            ctx.strokeStyle = "#FF0000";
-            ctx.strokeRect(player.x + (player.width / 2) + (player.slap[player.slap_frame].dx * player.facing) - offset_x,
-                           player.y + (player.height / 2) + player.slap[player.slap_frame].dy,
-                           player.slap[player.slap_frame].w * player.facing,
-                           player.slap[player.slap_frame].h);
+        for (var pi = 0; pi < platforms.length; ++pi) {
+            ctx.drawImage(brick_sprite, platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
         }
     };
     var STEP = 1/60;
