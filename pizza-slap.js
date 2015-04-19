@@ -48,7 +48,12 @@
 
     var platforms = [];
 
-    var collides = function(o1, o2) {
+    var collides = function(o1, o2, respect_invincibility) {
+        if (respect_invincibility) {
+            if ((o1.invincible_until > frameno) || (o2.invincible_until > frameno)) {
+                return false;
+            }
+        }
         if ((o1.x < (o2.x + o2.width)) &&
             ((o1.x + o1.width) > o2.x) &&
             (o1.y < (o2.y + o2.height)) &&
@@ -70,14 +75,51 @@
 
     var new_obj_at = function(obj, new_x, new_y) {
         return {
+            'invincible_until': obj.invincible_until,
             'x': new_x,
             'y': new_y,
             'height': obj.height,
             'width': obj.width,
         };
     };
+    var slap_obj = function(obj) {
+        if (obj.slap_frame === -1) {
+            return {
+                'x': 0,
+                'y': 0,
+                'height': 0,
+                'width': 0,
+            };
+        }
+        if (obj.facing === 1) {
+            return {
+                'x': obj.x + (obj.width / 2) + obj.slap[obj.slap_frame].dx,
+                'y': obj.y + (obj.height / 2) + obj.slap[obj.slap_frame].dy,
+                'height': obj.slap[obj.slap_frame].h,
+                'width': obj.slap[obj.slap_frame].w
+            };
+        } else {
+            return {
+                'x': obj.x + (obj.width / 2) - obj.slap[obj.slap_frame].dx - obj.slap[obj.slap_frame].w,
+                'y': obj.y + (obj.height / 2) + obj.slap[obj.slap_frame].dy,
+                'height': obj.slap[obj.slap_frame].h,
+                'width': obj.slap[obj.slap_frame].w
+            };
+        }
+    };
     var under_feet = function(obj) {
         return new_obj_at(obj, obj.x, obj.y + 1);
+    };
+    var spiked = function(obj) {
+        var under = under_feet(obj);
+        for (var i = 0; i < platforms.length; ++i) {
+            if (platforms[i].spike) {
+                if (collides(under, platforms[i], true)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     };
 
     var animated_sprite = function(obj, sprite_name) {
@@ -97,8 +139,8 @@
     var player = {
         'dead': true,
         'facing': 1,
-        'height': 120,
-        'width': 80,
+        'height': 118,
+        'width': 74,
         'x': 50,
         'y': 200,
         'xspeed': 0,
@@ -111,6 +153,11 @@
         'top_speed': 6,
         'jump': -10.5,
         'unjump': -5.5,
+        'invincible_until': frameno + 120,
+        'hit': function (p) {
+            p.yspeed = -5,
+            p.invincible_until = frameno + 80;
+        },
         'slap': [
             { 'dx': -20, 'dy': -90, 'h': 40, 'w': 90 },
             { 'dx': -20, 'dy': -90, 'h': 40, 'w': 90 },
@@ -234,10 +281,31 @@
         }
     };
 
+    var move_player = function() {
+        move(player);
+        if (spiked(player)) {
+            player.hit(player);
+        }
+        for (var mi = 0; mi < monsters.length; ++mi) {
+            if (collides(player, monsters[mi], true)) {
+                player.hit(player);
+            }
+            var s = slap_obj(player);
+            if (s.x !== 0) {
+                console.log("%o", s);
+            }
+            if (collides(slap_obj(player), monsters[mi], true)) {
+                monsters[mi].hit(monsters[mi]);
+            }
+        }
+    };
+
     var update = function() {
         ++frameno;
-        move(player);
+        move_player();
+        move_monsters();
         maybe_slap();
+        maybe_spawn_monsters();
     };
 
     var keydown = function(e) {
@@ -283,13 +351,59 @@
     $(document).keydown(keydown);
     $(document).keyup(keyup);
 
-    var new_platform = function(bx, by) {
+    var new_platform = function(bx, by, spike) {
         return {
             'x': bx * BLOCK_WIDTH,
             'y': by * BLOCK_HEIGHT,
             'height': BLOCK_HEIGHT,
-            'width': BLOCK_WIDTH
+            'width': BLOCK_WIDTH,
+            'spike': spike,
         };
+    };
+
+    var spawnpoints = [];
+    var new_spawnpoint = function(bx, by, predicate, spawn) {
+        return {
+            'x': bx * BLOCK_WIDTH,
+            'y': by * BLOCK_HEIGHT,
+            'predicate': predicate,
+            'spawn': spawn,
+            'spawned': false,
+        };
+    };
+
+    var monsters = [];
+
+    var maybe_spawn_monsters = function() {
+        for (var si = 0; si < spawnpoints.length; ++si) {
+            if ((! spawnpoints[si].spawned) && (spawnpoints[si].predicate())) {
+                // spawn a monster
+                monsters.push(spawnpoints[si].spawn(spawnpoints[si].x, spawnpoints[si].y));
+                spawnpoints[si].spawned = true;
+            }
+        }
+    };
+
+    var new_monster = function(x, y) {
+        return {
+            'facing': 1,
+            'x': x,
+            'y': y,
+            'height': 150,
+            'width': 100,
+            'xspeed': 0,
+            'yspeed': 0,
+            'hit': function (m) {
+                m.yspeed = -5;
+                m.invincible_until = frameno + 30;
+            },
+        };
+    };
+
+    var move_monsters = function() {
+        for (var mi = 0; mi < monsters.length; ++mi) {
+            move(monsters[mi]);
+        }
     };
 
     var level = {
@@ -306,12 +420,19 @@
                 }
                 switch (level_data[row][column]) {
                     case 'x':
-                        platforms.push(new_platform(column, row));
+                        platforms.push(new_platform(column, row, false));
                         break;
                     case '*':
                         spawn_player(column, row);
                         break;
+                    case 'A':
+                        spawnpoints.push(new_spawnpoint(column, row, function () { return true }, new_monster));
+                        break;
+                    case '^':
+                        platforms.push(new_platform(column, row, true));
+                        break;
                     case ' ':
+                        // nothing to see here
                         break;
                     default:
                         console.log("????");
@@ -346,6 +467,9 @@
         var ds = function(obj, sprite_name) {
             var sinfo  = obj.sprites[sprite_name];
             var sprite = sinfo.s(obj);
+            if ((obj.invincible_until > frameno) && (frameno % 9 == 0)) {
+                return;
+            }
             ctx.save();
             if (obj.facing == 1) {
                 ctx.scale(1, 1);
@@ -368,15 +492,22 @@
             } else {
                 ds(player, 'slap');
                 //ctx.strokeStyle = "#FF0000";
-                //ctx.strokeRect(player.x + (player.width / 2) + (player.slap[player.slap_frame].dx * player.facing) - offset_x,
-                               //player.y + (player.height / 2) + player.slap[player.slap_frame].dy,
-                               //player.slap[player.slap_frame].w * player.facing,
-                               //player.slap[player.slap_frame].h);
+                //var s = slap_obj(player);
+                //ctx.strokeRect(s.x - offset_x, s.y, s.width, s.height);
             }
         }
 
         for (var pi = 0; pi < platforms.length; ++pi) {
-            ctx.drawImage(brick_sprite, platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
+            if (platforms[pi].spike) {
+                ctx.strokeRect(platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
+            } else {
+                ctx.drawImage(brick_sprite, platforms[pi].x - offset_x, platforms[pi].y, platforms[pi].width, platforms[pi].height);
+            }
+        }
+
+        for (var mi = 0; mi < monsters.length; ++mi) {
+            ctx.strokeStyle = "#FF0000";
+            ctx.strokeRect(monsters[mi].x - offset_x, monsters[mi].y, monsters[mi].width, monsters[mi].height);
         }
     };
     var STEP = 1/60;
