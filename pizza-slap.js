@@ -294,23 +294,24 @@
         //console.log("obj.x = " + obj.x + ", obj.y = " + obj.y);
     };
 
-    var maybe_slap = function() {
-        if (player.slap_frame == -1) {
-            if (player.press_slap) {
-                player.slap_frame = 0;
-                player.press_slap = false;
+    var maybe_slap = function(obj) {
+        if (obj.slap_frame == -1) {
+            if (obj.press_slap) {
+                obj.slap_frame = 0;
+                obj.press_slap = false;
             }
         } else {
             //console.log("slapping");
-            ++player.slap_frame;
-            if (player.slap_frame == player.slap.length) {
-                player.slap_frame = -1;
+            ++obj.slap_frame;
+            if (obj.slap_frame == obj.slap.length) {
+                obj.slap_frame = -1;
             }
         }
     };
 
     var move_player = function() {
         move(player);
+        maybe_slap(player);
         if (spiked(player)) {
             player.hit(player);
         }
@@ -324,7 +325,10 @@
             if (! monsters[mi].dead) {
                 if (collides(player, monsters[mi], true)) {
                     player.hit(player);
+                } else if (collides(player, slap_obj(monsters[mi]), true)) {
+                    player.hit(player);
                 }
+
                 if (collides(slap_obj(player), monsters[mi], true)) {
                     monsters[mi].hit(monsters[mi]);
                 }
@@ -336,7 +340,6 @@
         ++frameno;
         move_player();
         move_monsters();
-        maybe_slap();
         maybe_spawn_monsters();
     };
 
@@ -438,10 +441,46 @@
             'jump': -11.5,
             'unjump': -8,
             'invincible_until': 0,
+            'slap_frame': -1,
+            'slap': [
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 30 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 40 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 50 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 60 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 50 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 40 },
+                { 'dx': 30, 'dy': -30, 'h': 40, 'w': 30 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+                { 'dx': 30, 'dy': -30, 'h': 0, 'w': 0 },
+            ],
             'ai': function (m) {
                 m.press_left  = false;
                 m.press_right = false;
                 m.press_jump  = false;
+                m.press_slap  = false;
+
+                // freeze when slapping
+                if (m.slap_frame !== -1) {
+                    return;
+                }
 
                 var in_the_air = (! collides_with_platforms(under_feet(m)));
                 // attempt to chase
@@ -459,6 +498,8 @@
                         }
                         m.press_right = true;
                     }
+                } else {
+                    m.press_slap = true;
                 }
             },
             'health': 3,
@@ -481,6 +522,7 @@
             if (! monsters[mi].dead) {
                 monsters[mi].ai(monsters[mi]);
                 move(monsters[mi]);
+                maybe_slap(monsters[mi]);
             }
         }
     };
@@ -594,6 +636,12 @@
             if (! monsters[mi].dead) {
                 ctx.strokeStyle = "#FF0000";
                 ctx.strokeRect(monsters[mi].x - offset_x, monsters[mi].y, monsters[mi].width, monsters[mi].height);
+                if (monsters[mi].slap_frame === -1) {
+                } else {
+                    var s = slap_obj(monsters[mi]);
+                    ctx.strokeStyle = "#FF0000";
+                    ctx.strokeRect(s.x - offset_x, s.y, s.width, s.height);
+                }
             }
         }
     };
