@@ -20,6 +20,15 @@
         return list;
     };
 
+    var sounds = {
+        "slap": new Audio("slap.mp3"),
+        "monster_hit": new Audio("monster-hit.mp3"),
+        "monster_kill": new Audio("monster_kill.mp3"),
+        "player_hit": new Audio("player_hit.mp3"),
+        "player_kill": new Audio("player_kill.mp3"),
+        "jump": new Audio("jump.mp3"),
+    };
+
     var bg_layer1 = new Image();
     var bg_layer2 = new Image();
     var bg_layer3 = new Image();
@@ -146,6 +155,9 @@
         'health': 8,
         'dead': true,
         'kill': function (p) {
+            sounds.player_kill.load();
+            sounds.player_kill.volume = 0.1;
+            sounds.player_kill.play();
             p.dead = true;
             game_over = true;
         },
@@ -176,6 +188,10 @@
             --p.health;
             if (p.health <= 0) {
                 p.kill(p);
+            } else {
+                sounds.player_hit.load();
+                sounds.player_hit.volume = 0.1;
+                sounds.player_hit.play();
             }
         },
         'slap': [
@@ -250,6 +266,9 @@
         }
 
         if ((! in_the_air) && (obj.press_jump)) {
+            sounds.jump.load();
+            sounds.jump.volume = 0.1;
+            sounds.jump.play();
             obj.press_jump = false;
             obj.yspeed = obj.jump;
         }
@@ -302,6 +321,9 @@
     var maybe_slap = function(obj) {
         if (obj.slap_frame == -1) {
             if (obj.press_slap) {
+                sounds.slap.load();
+                sounds.slap.volume = 0.08;
+                sounds.slap.play();
                 obj.slap_frame = 0;
                 obj.press_slap = false;
             }
@@ -335,6 +357,9 @@
 
                 if (collides(slap_obj(player), monsters[mi], true)) {
                     monsters[mi].hit(monsters[mi], player.facing);
+                    sounds.monster_hit.load();
+                    sounds.monster_hit.volume = 0.3;
+                    sounds.monster_hit.play();
                 }
             }
         }
@@ -443,6 +468,9 @@
     };
 
     var monster_kill = function (m) {
+        sounds.monster_kill.load();
+        sounds.monster_kill.volume = 0.04;
+        sounds.monster_kill.play();
         m.dead = true;
     };
 
@@ -760,7 +788,11 @@
             },
             'health': 10,
             'hit': monster_hit,
-            'kill': monster_kill,
+            'kill': function (m) {
+                monster_kill(m);
+                game_over = true;
+                victory = true;
+            },
             'sprites': {
                 'monster': { 's': function(p) { return animated_sprite(p, 'monster') },
                              'dx': 0,
@@ -862,6 +894,9 @@
             }
         }
         level.width = (max_column + 1) * BLOCK_WIDTH;
+
+        level_ready = true;
+        requestAnimationFrame(frame);
     };
 
     var ctx = c.getContext("2d");
@@ -948,8 +983,9 @@
     var delta = 0;
     var last = window.performance.now();
     var next_level = true;
+    var level_ready = false;
     var frame = function() {
-        if ((! game_over) && (! next_level)) {
+        if ((! game_over) && (level_ready)) {
             var now = window.performance.now();
             delta = delta + Math.min(1, (now - last) / 1000);
             while (delta > STEP) {
@@ -961,11 +997,10 @@
             requestAnimationFrame(frame);
         }
         if (next_level) {
+            level_ready = false;
             next_level = false;
             ++level.id;
-            $.getJSON("level-" + level.id + ".json", load_level).then(function () {
-                requestAnimationFrame(frame);
-            });
+            $.getJSON("level-" + level.id + ".json", load_level);
         }
         if (game_over) {
             render_game_over();
