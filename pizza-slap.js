@@ -113,14 +113,18 @@
     };
     var spiked = function(obj) {
         var under = under_feet(obj);
+        var spike_count = 0;
+        var plat_count = 0;
         for (var i = 0; i < platforms.length; ++i) {
-            if (platforms[i].spike) {
-                if (collides(under, platforms[i], true)) {
-                    return true;
+            if (collides(under, platforms[i], true)) {
+                if (platforms[i].spike) {
+                    ++spike_count;
+                } else {
+                    ++plat_count;
                 }
             }
         }
-        return false;
+        return (spike_count > plat_count);
     };
 
     var animated_sprite = function(obj, sprite_name) {
@@ -159,7 +163,7 @@
         'acceleration': 5,
         'deceleration': 5,
         'top_speed': 6,
-        'jump': -10.5,
+        'jump': -12.5,
         'unjump': -5.5,
         'invincible_until': frameno + 120,
         'hit': function (p, facing) {
@@ -317,8 +321,7 @@
         }
         for (var ei = 0; ei < level_end.length; ++ei) {
             if (collides(player, level_end[ei])) {
-                victory = true;
-                game_over = true;
+                next_level = true;
             }
         }
         for (var mi = 0; mi < monsters.length; ++mi) {
@@ -467,23 +470,25 @@
 
                 var in_the_air = (! collides_with_platforms(under_feet(m)));
                 // attempt to chase
-                if ((player.x + player.width) < m.x) {
-                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x - m.width / 2, m.y + m.height)))) {
-                        if (m.xspeed === 0) {
-                            m.press_jump = true;
+                if (Math.abs(player.y - m.y) < 150) {
+                    if ((player.x + player.width) < m.x) {
+                        if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x - m.width / 2, m.y + m.height)))) {
+                            if (m.xspeed === 0) {
+                                m.press_jump = true;
+                            }
+                            m.press_left = true;
                         }
-                        m.press_left = true;
-                    }
-                } else if (player.x > (m.x + m.width)) {
-                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x + m.width / 2, m.y + m.height)))) {
-                        if (m.xspeed === 0) {
-                            m.press_jump = true;
+                    } else if (player.x > (m.x + m.width)) {
+                        if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x + m.width / 2, m.y + m.height)))) {
+                            if (m.xspeed === 0) {
+                                m.press_jump = true;
+                            }
+                            m.press_right = true;
                         }
-                        m.press_right = true;
                     }
                 }
             },
-            'health': 4,
+            'health': 3,
             'hit': monster_hit,
             'kill': monster_kill,
             'sprites': {
@@ -617,22 +622,24 @@
 
                 var in_the_air = (! collides_with_platforms(under_feet(m)));
                 // attempt to chase
-                if ((player.x + player.width) < (m.x - 20)) {
-                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x - m.width / 2, m.y + m.height)))) {
-                        if (m.xspeed === 0) {
-                            m.press_jump = true;
+                if (Math.abs(player.y - m.y) < 150) {
+                    if ((player.x + player.width) < (m.x - 20)) {
+                        if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x - m.width / 2, m.y + m.height)))) {
+                            if (m.xspeed === 0) {
+                                m.press_jump = true;
+                            }
+                            m.press_left = true;
                         }
-                        m.press_left = true;
-                    }
-                } else if (player.x > (m.x + m.width + 20)) {
-                    if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x + m.width / 2, m.y + m.height)))) {
-                        if (m.xspeed === 0) {
-                            m.press_jump = true;
+                    } else if (player.x > (m.x + m.width + 20)) {
+                        if ((in_the_air) || (collides_with_platforms(new_obj_at(m, m.x + m.width / 2, m.y + m.height)))) {
+                            if (m.xspeed === 0) {
+                                m.press_jump = true;
+                            }
+                            m.press_right = true;
                         }
-                        m.press_right = true;
+                    } else {
+                        m.press_slap = true;
                     }
-                } else {
-                    m.press_slap = true;
                 }
             },
             'health': 4,
@@ -663,6 +670,7 @@
     };
 
     var level = {
+        'id': 1,
         'width': 0,
     };
 
@@ -680,7 +688,15 @@
     };
 
     var load_level = function(level_data) {
-        //console.log("%o", level_data);
+        // le reset
+        platforms = [];
+        spawnpoints = [];
+        monsters = [];
+        level_end = [];
+        player.health = 8;
+
+        console.log("LOAD");
+
         var max_column = 0;
         for (var row = 0; row < level_data.length; ++row) {
             for (var column = 0; column < level_data[row].length; ++column) {
@@ -813,8 +829,9 @@
     var STEP = 1/60;
     var delta = 0;
     var last = window.performance.now();
+    var next_level = true;
     var frame = function() {
-        if (! game_over) {
+        if ((! game_over) && (! next_level)) {
             var now = window.performance.now();
             delta = delta + Math.min(1, (now - last) / 1000);
             while (delta > STEP) {
@@ -824,12 +841,18 @@
             render();
             last = now;
             requestAnimationFrame(frame);
-        } else {
+        }
+        if (next_level) {
+            next_level = false;
+            ++level.id;
+            $.getJSON("level-" + level.id + ".json", load_level).then(function () {
+                requestAnimationFrame(frame);
+            });
+        }
+        if (game_over) {
             render_game_over();
         }
     };
 
-    $.getJSON("level-1.json", load_level).then(function () {
-        requestAnimationFrame(frame);
-    });
+    requestAnimationFrame(frame);
 })(document.getElementById("pizza-slap"));
