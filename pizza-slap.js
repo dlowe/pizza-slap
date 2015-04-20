@@ -34,6 +34,7 @@
     var whacker_sprite = new Image();
     var whacker_arm_sprite = new Image();
     var whacker_slap_sprites = sprites("whacker-slap", 32);
+    var boss_sprites = sprites("boss", 8);
 
     bg_layer1.src = "bg-layer1.png";
     bg_layer2.src = "bg-layer2.png";
@@ -659,6 +660,120 @@
         };
     };
 
+    var new_boss = function(x, y) {
+        return {
+            'facing': 1,
+            'x': x,
+            'y': y,
+            'height': 140,
+            'width': 180,
+            'xspeed': 0,
+            'yspeed': 0,
+            'acceleration': 1,
+            'deceleration': 1,
+            'top_speed': 7,
+            'jump': -30,
+            'unjump': -30,
+            'invincible_until': 0,
+            'slap_frame': -1,
+            'slap': [],
+            'state': 0,
+            'ai': function (m) {
+                m.press_left  = false;
+                m.press_right = false;
+                m.press_jump  = false;
+
+                switch (m.state) {
+                    case 0: // chase!
+                        if (m.invincible_until > frameno) {
+                            // I'm hit, run away!!!
+                            m.state = 1;
+                            m.run_health = m.health;
+                            if (player.x < (level.width / 2)) {
+                                m.flee_facing = 1;
+                            } else {
+                                m.flee_facing = -1;
+                            }
+                        } else {
+                            if (m.xspeed === 0) {
+                                m.press_jump = true;
+                            } else {
+                                if ((Math.random() * 180) < 1) {
+                                    m.press_jump = true;
+                                }
+                            }
+                            if (m.y < 400) {
+                                if (m.x > (level.width / 2)) {
+                                    m.press_left = true;
+                                } else {
+                                    m.press_right = true;
+                                }
+                            } else {
+                                if ((player.x + player.width) < m.x) {
+                                    m.press_left = true;
+                                } else if (player.x > (m.x + m.width)) {
+                                    m.press_right = true;
+                                }
+                            }
+                        }
+                        break;
+                    case 1: // run away
+                        if ((m.yspeed === 0) && (m.y < 300)) {
+                            // I'm safe up here.
+                            m.state = 2;
+                            m.hide_until = frameno + 180;
+                        } else {
+                            if (m.run_health != m.health) {
+                                m.flee_facing *= -1;
+                                m.run_health = m.health;
+                            }
+                            if (m.flee_facing === 1) {
+                                if ((level.width - (m.x + m.width)) < (level.width / 5.5)) {
+                                    m.press_jump = true;
+                                    m.press_right = true;
+                                } else if ((level.width - (m.x + m.width)) > (level.width / 7.6)) {
+                                    m.press_right = true;
+                                } else {
+                                    m.flee_facing *= -1;
+                                }
+                            } else {
+                                if (m.x < (level.width / 5.5)) {
+                                    m.press_jump = true;
+                                    m.press_left = true;
+                                } else if (m.x > (level.width / 7.6)) {
+                                    m.press_left = true;
+                                } else {
+                                    m.flee_facing *= -1;
+                                }
+                            }
+                        }
+                        break;
+                    case 2: // stay away
+                        if (frameno > m.hide_until) {
+                            // CHAAARGE
+                            m.state = 0;
+                        } else {
+                            // huff, puff
+                        }
+                        break;
+                };
+            },
+            'health': 10,
+            'hit': monster_hit,
+            'kill': monster_kill,
+            'sprites': {
+                'monster': { 's': function(p) { return animated_sprite(p, 'monster') },
+                             'dx': 0,
+                             'dy': 0,
+                             'ss': boss_sprites,
+                             'sprite_index': 0,
+                             'sprite_speed': 3,
+                             'predicate': function (p) { return true },
+                },
+            }
+        };
+    };
+
     var move_monsters = function() {
         for (var mi = 0; mi < monsters.length; ++mi) {
             if (! monsters[mi].dead) {
@@ -670,7 +785,7 @@
     };
 
     var level = {
-        'id': 1,
+        'id': 2,
         'width': 0,
     };
 
@@ -709,6 +824,9 @@
                         break;
                     case '*':
                         spawn_player(column, row);
+                        break;
+                    case '%':
+                        monsters.push(new_boss(column * BLOCK_WIDTH, row * BLOCK_HEIGHT));
                         break;
                     case 'A':
                         spawnpoints.push(new_spawnpoint(column, row, from_ahead(column), new_blob));
